@@ -1,5 +1,7 @@
 # Faceit Levels
 
+![FACEIT Level 10 displayed on the Counter-Strike 2 scoreboard](assets/scoreboard.png)
+
 Standalone MetaMod:Source plugin for Counter-Strike 2. It automatically shows every connected player's FACEIT level on the scoreboard to everyone. There is no player command and no CS:GO fallback.
 
 ## Features
