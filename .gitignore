@@ -1,0 +1,9 @@
+/build/
+/obj-*/
+/test-build/
+/.vs/
+*.user
+*.suo
+*.pdb
+*.obj
+cache.tsv
