@@ -4,7 +4,7 @@
     "display_name": "Faceit Levels",
     "description": "Displays every player's FACEIT level on the CS2 scoreboard",
     "author": "karola3vax",
-    "url": "https://github.com/karola3vax/faceit-levels",
+    "url": "https://gitlab.com/karola3vax-group/faceit-levels",
     "log_tag": "FACEIT_LEVELS",
     "license": "AGPL-3.0-only",
     "version": "1.0.0"
