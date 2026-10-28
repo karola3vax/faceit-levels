@@ -35,7 +35,7 @@ int main()
 	CHECK(cache.at(76561198000000002).level == 0);
 	CHECK(ParseCache(FormatCache(cache)).size() == 2);
 
-	CHECK(LevelCoin(0) == 0 && LevelCoin(1) == 1088 && LevelCoin(10) == 1017 && LevelCoin(11) == 0);
+	CHECK(LevelCoin(0) == 0 && LevelCoin(1) == 1088 && LevelCoin(5) == 1041 && LevelCoin(10) == 1017 && LevelCoin(11) == 0);
 	CHECK(PlayerUrl(76561198000000001) == "https://open.faceit.com/data/v4/players?game=cs2&game_player_id=76561198000000001");
 	std::printf("faceit tests passed\n");
 }

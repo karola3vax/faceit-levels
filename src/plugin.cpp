@@ -69,7 +69,7 @@ bool FaceitLevels::Unload(char *, size_t)
 {
 	game_frame_.Remove(server_);
 	for (int slot = 0; slot < static_cast<int>(players_.size()); ++slot)
-		if (players_[slot].controller == game::Controller(slot)) RestoreCoin(players_[slot]);
+		if (players_[slot].applied_coin && players_[slot].controller == game::Controller(slot)) RestoreCoin(players_[slot]);
 	ISteamHTTP *http = SteamGameServerHTTP();
 	for (Request &request : requests_)
 	{
@@ -132,7 +132,8 @@ void FaceitLevels::UpdatePlayer(int slot)
 		RestoreCoin(player);
 		return;
 	}
-	if (player.applied_coin == 0) player.original_coin = *coin;
+	// A coin this plugin did not write (the player's own, loaded late) becomes the one to restore.
+	if (player.applied_coin == 0 || *coin != player.applied_coin) player.original_coin = *coin;
 	player.applied_coin = wanted;
 	if (*coin != wanted)
 	{
@@ -223,6 +224,7 @@ void FaceitLevels::ReadConfig()
 	const std::string text = ReadFile(path);
 	config_ = faceit::ParseConfig(text);
 	key_warning_shown_ = false;
+	retry_at_.clear(); // a fixed api_key works at once
 	if (text.empty()) META_CONPRINTF("[FACEIT_LEVELS] Could not read %s.\n", path.c_str());
 	else if (config_.api_key.empty()) META_CONPRINTF("[FACEIT_LEVELS] Set api_key in %s to show FACEIT levels.\n", path.c_str());
 }

@@ -182,7 +182,9 @@ std::string FormatCache(const Cache &cache)
 
 std::uint32_t LevelCoin(int level)
 {
-	// Coin item ids of the FACEIT level 1-10 images (mapping from Pisex/cs2-faceit-level).
+	// The map tokens whose icons Workshop item 3777518340 replaces with the level 1-10 images:
+	// boyard, blagai, blackgold, biome, bazaar, basalt, backalley, apollo, anubis, ali
+	// (item ids from CS2's scripts/items/items_game.txt; the mapping Pisex/cs2-faceit-level uses).
 	constexpr std::array<std::uint32_t, 11> coins = {0, 1088, 1087, 1032, 1055, 1041, 1074, 1039, 1067, 1061, 1017};
 	return level >= 1 && level <= 10 ? coins[level] : 0;
 }
