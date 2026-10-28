@@ -1,0 +1,5 @@
+"Metamod Plugin"
+{
+	"alias"	"faceit_levels"
+	"file"	"addons/faceit_levels/bin/faceit_levels"
+}

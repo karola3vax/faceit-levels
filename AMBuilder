@@ -1,34 +1,64 @@
-# vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
+# Defines the faceit_levels Metamod plugin build. AMBuild supplies the compiler; the SDK,
+# Metamod and KHook come from the pinned checkouts in build-dependencies.json.
+
 import os
 
-for sdk_target in MMSPlugin.sdk_targets:
-  sdk = sdk_target.sdk
-  cxx = sdk_target.cxx
+root = builder.sourcePath
+sdk = config.sdk_target.sdk
+with open(os.path.join(root, 'VERSION'), encoding='utf-8') as version_file:
+  version = version_file.read().strip()
 
-  binary = MMSPlugin.HL2Library(builder, cxx, f'{MMSPlugin.metadata["name"]}.{sdk["name"]}', sdk)
-
-  if binary.compiler.target.platform == 'windows':
-    binary.compiler.postlink += [
-      os.path.join(sdk['path'], 'lib', 'public', 'win64', 'steam_api64.lib'),
-    ]
-  elif binary.compiler.target.platform == 'linux':
-    binary.compiler.postlink += [
-      os.path.join(sdk['path'], 'lib', 'linux64', 'libsteam_api.so'),
-    ]
-
-  generated_folder = builder.AddFolder('generated')
-  generated = sdk_target.protoc.Generate(
-    builder,
-    [os.path.join(sdk['path'], 'common', 'network_connection.proto')],
-    [('cpp', generated_folder)],
-  )
-  binary.compiler.sourcedeps += generated['cpp']['headers']
-  binary.compiler.cxxincludes += [os.path.join(builder.buildPath, 'generated')]
-
-  binary.sources += [
-    'src/plugin.cpp',
-    'src/faceit_parser.cpp',
-  ]
-
-  nodes = builder.Add(binary)
-  MMSPlugin.binaries += [nodes]
+plugin = config.cxx.Library('faceit_levels')
+compiler = plugin.compiler
+# The SDK's network headers include generated protobuf code.
+protobuf = builder.tools.Protoc(protoc=config.sdk_target.protoc, sources=[
+  os.path.join(sdk['path'], 'common', 'network_connection.proto'),
+])
+protobuf.protoc.includes += [
+  os.path.join(sdk['path'], 'thirdparty', 'protobuf-3.21.8', 'src'),
+  os.path.join(sdk['path'], 'common'),
+]
+plugin.custom = [protobuf]
+compiler.cxxincludes += [
+  os.path.join(root, 'src'),
+  os.path.join(config.mms_root, 'core'),
+  os.path.join(config.mms_root, 'third_party', 'khook', 'include'),
+  os.path.join(builder.buildPath, 'faceit_levels', '{}-{}'.format(compiler.target.platform, compiler.target.arch)),
+]
+if compiler.behavior == 'msvc':
+  compiler.cflags += ['/W4', '/std:c++20', '/EHsc', '/permissive-', '/GS', '/utf-8', '/O2']
+  compiler.cflags += ['/MTd'] if builder.options.debug else ['/MT']
+  compiler.defines += ['_CRT_SECURE_NO_WARNINGS', 'NOMINMAX']
+  compiler.linkflags += ['/DYNAMICBASE', '/HIGHENTROPYVA', '/NXCOMPAT', '/DEBUG:NONE']
+  # steam_api64.dll is already loaded by the server; delay-loading keeps the plugin
+  # loadable before Steam is up.
+  compiler.postlink += ['delayimp.lib']
+  compiler.linkflags += ['/DELAYLOAD:steam_api64.dll']
+else:
+  compiler.cflags += ['-Wall', '-Wextra', '-pthread', '-msse4.1', '-fno-strict-aliasing', '-fPIC',
+    '-fvisibility=hidden', '-fstack-protector-strong', '-O2']
+  # Without -fno-gnu-unique glibc never unloads the library, so `meta unload` + `meta load`
+  # would keep the old build.
+  compiler.cxxflags += ['-std=c++20', '-fvisibility-inlines-hidden', '-fno-gnu-unique']
+  compiler.linkflags += ['-pthread', '-ldl']
+  compiler.defines += ['stricmp=strcasecmp', '_stricmp=strcasecmp', '_snprintf=snprintf',
+    '_vsnprintf=vsnprintf', 'HAVE_STDINT_H', 'GNUC']
+compiler.symbol_files_ = None
+compiler.defines += ['DEBUG', '_DEBUG'] if builder.options.debug else ['NDEBUG']
+for manifest in config.sdk_manifests:
+  compiler.defines += ['SE_{}={}'.format(manifest['define'], manifest['code'])]
+compiler.defines += ['META_IS_SOURCE2', 'FACEIT_LEVELS_VERSION="{}"'.format(version)]
+config.SdkHelpers.configureCxx(builder, plugin, sdk)
+plugin.sources += [
+  os.path.join(root, 'src', 'plugin.cpp'),
+  os.path.join(root, 'src', 'game.cpp'),
+  os.path.join(root, 'src', 'faceit.cpp'),
+  # GameEntitySystem() and CEntitySystem::GetEntityIdentity (used by GetPlayerController).
+  os.path.join(sdk['path'], 'entity2', 'entitysystem.cpp'),
+  os.path.join(sdk['path'], 'entity2', 'entityidentity.cpp'),
+  os.path.join(sdk['path'], 'public', 'tier0', 'memoverride.cpp'),
+]
+if compiler.target.platform == 'linux':
+  # Metamod resolves the plugin factory with dlsym; pull the SDK's interfaces in explicitly.
+  plugin.sources += [os.path.join(sdk['path'], 'interfaces', 'interfaces.cpp')]
+builder.Add(plugin)

@@ -2,33 +2,31 @@
 
 ![FACEIT Level 10 displayed on the Counter-Strike 2 scoreboard](assets/scoreboard.png)
 
-Standalone MetaMod:Source plugin for Counter-Strike 2. It automatically shows every connected player's FACEIT level on the scoreboard to everyone. There is no player command and no CS:GO fallback.
+A Metamod:Source plugin for Counter-Strike 2 that shows every player's FACEIT level on the scoreboard, for everyone. It runs on its own: no commands, no CounterStrikeSharp or SwiftlyS2.
 
 ## Features
 
-- Enabled automatically after MetaMod loads it
-- FACEIT levels 1 through 10 on the scoreboard
-- Unknown or unranked players show no FACEIT icon
-- One-hour cache and refresh for connected players
-- Built-in Steam HTTP client; no CounterStrikeSharp or SwiftlyS2 dependency
-- Runtime CS2 schema lookup instead of hard-coded inventory field offsets
-- Windows and Linux support
+- FACEIT levels 1 to 10 on the scoreboard, as the player's coin
+- Players without a FACEIT CS2 account keep their own coin
+- Each level is looked up once and refreshed every hour (configurable), with a small cache that survives restarts
+- Windows and Linux
+- No offsets to update after CS2 updates: player fields are read from CS2's own schema at load
 
 ## Requirements
 
 - Counter-Strike 2 dedicated server
-- MetaMod:Source 2.x
-- A [FACEIT Data API key](https://developers.faceit.com/)
-- The combined `server_assets` Workshop addon containing the FACEIT level images
+- Metamod:Source 2.0.0 build 1469 or newer
+- A FACEIT Data API key (server-side) from [developers.faceit.com](https://developers.faceit.com/)
+- The FACEIT level images on the clients: the `server_assets` Workshop addon (or Workshop item 3724637448) through MultiAddonManager
 
 ## Installation
 
 1. Extract the release into `game/csgo/`.
 2. Open `game/csgo/addons/faceit_levels/config.ini` and set `api_key`.
-3. Add the combined `server_assets` Workshop ID to MultiAddonManager.
-4. Restart the server, or load `addons/metamod/faceit_levels.vdf` through MetaMod.
+3. Add the Workshop addon with the level images to MultiAddonManager (`mm_extra_addons`).
+4. Restart the server.
 
-The package installs:
+The release contains:
 
 ```text
 addons/
@@ -39,57 +37,39 @@ addons/
 `-- metamod/faceit_levels.vdf
 ```
 
-The Windows and Linux binaries are distributed together in releases. Each platform build produces its own binary folder.
-
 ## Configuration
 
-```ini
-api_key=
-refresh_minutes=60
-request_timeout_seconds=10
-max_concurrent_requests=4
-game_entity_system_offset_windows=88
-game_entity_system_offset_linux=80
-```
+`addons/faceit_levels/config.ini` is read at server start and on every map change.
 
-Only `api_key` must normally be changed. The plugin stores its disposable API cache in `addons/faceit_levels/cache.tsv`.
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `api_key` | (empty) | Your FACEIT Data API key. Nothing is looked up without it. |
+| `refresh_minutes` | `60` | How often a player's level is fetched again (1-1440). |
+| `request_timeout_seconds` | `10` | How long one request may take (1-60). |
+| `max_concurrent_requests` | `4` | How many requests may run at once (1-16). |
+
+Levels are cached in `addons/faceit_levels/cache.tsv`. The file can be deleted at any time.
 
 ## Building
 
-Place the repositories side by side:
+Dependencies are pinned in `build-dependencies.json` (Metamod:Source, s2sdk, hl2sdk-manifests, AMBuild) and fetched by the build scripts.
 
-```text
-faceit-levels/
-hl2sdk-cs2/
-metamod-source/
-```
+- Windows (Visual Studio 2022 C++ build tools, Python 3): `.\scripts\build-windows.ps1`
+- Linux (Docker; builds in Valve's SteamRT3 "sniper" SDK image): `.\scripts\build-steamrt3.ps1`, or `scripts/build-linux.sh` on a Linux machine with gcc, git and Python 3
 
-Then configure an optimized 64-bit CS2 build:
+The release files are staged in `dist/`. Tests for the config, reply and cache parsing:
 
 ```bash
-mkdir -p build && cd build
-python ../configure.py --enable-optimize --targets=x86_64 -s cs2 \
-  --mms_path ../../metamod-source \
-  --hl2sdk-root ../.. \
-  --hl2sdk-manifests ../../metamod-source/hl2sdk-manifests
-ambuild
+g++ -std=c++20 -Isrc tests/faceit_test.cpp src/faceit.cpp -o faceit_test && ./faceit_test
 ```
-
-The packaged files are written below `build/package/cs2/`.
-
-Linux release binaries are built on AlmaLinux 8 for compatibility with older Pterodactyl images such as the K4 egg.
 
 ## Credits
 
-- [karola3vax on GitHub](https://github.com/karola3vax)
-- [karola3vax on Steam](https://steamcommunity.com/profiles/76561198353131845/)
-- [Pisex/cs2-faceit-level](https://github.com/Pisex/cs2-faceit-level) for the original scoreboard asset mapping and implementation idea
-- [zhw1nq/swiftlyS2-faceit-scoreboard](https://github.com/zhw1nq/swiftlyS2-faceit-scoreboard) for the current CS2-only FACEIT lookup reference
+- [Pisex/cs2-faceit-level](https://github.com/Pisex/cs2-faceit-level) for the scoreboard coin mapping and the idea
+- [zhw1nq/swiftlyS2-faceit-scoreboard](https://github.com/zhw1nq/swiftlyS2-faceit-scoreboard) for the CS2 FACEIT lookup reference
 
 FACEIT is a trademark of its respective owner. This project is not affiliated with or endorsed by FACEIT.
 
 ## License
 
-Copyright (C) 2026 karola3vax.
-
-Licensed under the GNU Affero General Public License v3.0 only. See [LICENSE](LICENSE).
+Copyright (C) 2026 karola3vax. Licensed under the GNU Affero General Public License v3.0 only. See [LICENSE](LICENSE).

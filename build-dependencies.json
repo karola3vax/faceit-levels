@@ -1,0 +1,21 @@
+{
+  "ambuild": {
+    "url": "https://github.com/alliedmodders/ambuild.git",
+    "commit": "01212cb57c96561f664b6dfb2ee10e66de6f81e4"
+  },
+  "metamod": {
+    "url": "https://github.com/alliedmodders/metamod-source.git",
+    "commit": "170058a2f0dbd58106b7c76bfe88a94672295356",
+    "note": "Metamod:Source 2.0.0 build 1483 (2026-10-18), KHook. The plugin interface is unchanged since build 1469."
+  },
+  "hl2sdk_manifests": {
+    "url": "https://github.com/alliedmodders/hl2sdk-manifests.git",
+    "commit": "1600a504c89d81e15938719336b7f750b8417d47"
+  },
+  "s2sdk": {
+    "url": "https://github.com/alliedmodders/s2sdk.git",
+    "commit": "aeaea285035347d5c5d319ffafcdf070a527296b",
+    "note": "The cs2 branch of s2sdk, which continues hl2sdk's cs2 branch (2026-10-28)."
+  },
+  "steamrt3_image": "registry.gitlab.steamos.cloud/steamrt/sniper/sdk@sha256:2969e5a47146a6494c01d953cd818b1d62712f42f9e54c4809d7a3aa8dc276ce"
+}

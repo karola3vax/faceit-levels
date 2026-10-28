@@ -1,6 +1,8 @@
+/.build-deps/
 /build/
-/obj-*/
-/test-build/
+/build-linux/
+/dist/
+/release/
 /.vs/
 *.user
 *.suo

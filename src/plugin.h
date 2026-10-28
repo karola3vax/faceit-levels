@@ -1,118 +1,83 @@
 #pragma once
 
 #include <ISmmPlugin.h>
-#include <igameevents.h>
-#include <iserver.h>
+#include <engine2/isource2server.h>
 #include <steam/isteamhttp.h>
-#include <steam/steam_gameserver.h>
+#include <steam/steam_api_common.h>
 
 #include <array>
 #include <chrono>
-#include <cstddef>
 #include <cstdint>
 #include <list>
 #include <string>
 #include <unordered_map>
 
-#include "version_gen.h"
+#include "faceit.h"
 
 class CEntityInstance;
 
 class FaceitLevels final : public ISmmPlugin, public IMetamodListener
 {
 public:
-    bool Load(PluginId id, ISmmAPI* ismm, char* error, size_t maxlen, bool late) override;
-    bool Unload(char* error, size_t maxlen) override;
-    void OnLevelShutdown() override;
+	FaceitLevels();
 
-    void HookGameFrame(bool simulating, bool firstTick, bool lastTick);
-    void HookClientActive(CPlayerSlot slot, bool loadGame, const char* name, uint64 xuid);
-    void HookClientDisconnect(CPlayerSlot slot, ENetworkDisconnectionReason reason, const char* name, uint64 xuid,
-                              const char* networkId);
-    void HookSteamActivated();
-    void HookSteamDeactivated();
+	bool Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bool late) override;
+	bool Unload(char *error, size_t max_length) override;
+	void OnLevelInit(const char *, const char *, const char *, const char *, bool, bool) override;
+	void OnLevelShutdown() override;
 
-    const char* GetAuthor() override { return PLUGIN_AUTHOR; }
-    const char* GetName() override { return PLUGIN_DISPLAY_NAME; }
-    const char* GetDescription() override { return PLUGIN_DESCRIPTION; }
-    const char* GetURL() override { return PLUGIN_URL; }
-    const char* GetLicense() override { return PLUGIN_LICENSE; }
-    const char* GetVersion() override { return PLUGIN_FULL_VERSION; }
-    const char* GetDate() override { return __DATE__; }
-    const char* GetLogTag() override { return PLUGIN_LOGTAG; }
+	const char *GetAuthor() override { return "karola3vax"; }
+	const char *GetName() override { return "Faceit Levels"; }
+	const char *GetDescription() override { return "Shows every player's FACEIT level on the CS2 scoreboard"; }
+	const char *GetURL() override { return "https://github.com/karola3vax/faceit-levels"; }
+	const char *GetLicense() override { return "AGPL-3.0-only"; }
+	const char *GetVersion() override { return FACEIT_LEVELS_VERSION; }
+	const char *GetDate() override { return __DATE__; }
+	const char *GetLogTag() override { return "FACEIT_LEVELS"; }
 
 private:
-    using Clock = std::chrono::steady_clock;
+	using Clock = std::chrono::steady_clock;
 
-    struct CacheEntry
-    {
-        int level = 0;
-        std::uint64_t fetchedAt = 0;
-        Clock::time_point retryAt{};
-    };
+	struct Player
+	{
+		std::uint64_t steam_id = 0;
+		CEntityInstance *controller = nullptr;
+		std::uint32_t applied_coin = 0;  // 0: this plugin has not changed the coin
+		std::uint32_t original_coin = 0; // the coin before it did
+	};
 
-    struct PlayerState
-    {
-        std::uint64_t steamId = 0;
-        CEntityInstance* controller = nullptr;
-        int level = 0;
-        std::uint32_t originalCoin = 0;
-        std::uint32_t appliedCoin = 0;
-    };
+	// One FACEIT lookup. Lives in a std::list: Steam keeps the call result's address.
+	struct Request
+	{
+		FaceitLevels *owner = nullptr;
+		std::uint64_t steam_id = 0;
+		HTTPRequestHandle handle = INVALID_HTTPREQUEST_HANDLE;
+		bool done = false;
+		CCallResult<Request, HTTPRequestCompleted_t> call;
+		void Completed(HTTPRequestCompleted_t *result, bool io_failure) { owner->Completed(*this, result, io_failure); }
+	};
 
-    struct PendingRequest
-    {
-        PendingRequest(FaceitLevels* owner, std::uint64_t steamId, HTTPRequestHandle request)
-            : owner(owner), steamId(steamId), request(request)
-        {
-        }
+	KHook::Return<void> OnGameFrame(IServerGameDLL *, bool simulating, bool first_tick, bool last_tick);
+	void Tick();
+	void UpdatePlayer(int slot);
+	void RestoreCoin(Player &player);
+	void StartRequest(std::uint64_t steam_id);
+	void Completed(Request &request, HTTPRequestCompleted_t *result, bool io_failure);
+	void ReadConfig();
+	void SaveCache();
 
-        void OnComplete(HTTPRequestCompleted_t* result, bool failed);
-
-        FaceitLevels* owner;
-        std::uint64_t steamId;
-        HTTPRequestHandle request;
-        bool complete = false;
-        CCallResult<PendingRequest, HTTPRequestCompleted_t> callback;
-    };
-
-    bool LoadConfig();
-    void LoadCache();
-    void SaveCache();
-    bool ResolveSchemaOffsets(char* error, size_t maxlen);
-    void RefreshSteamHttp();
-    void CancelRequests();
-    void Tick();
-    void RefreshPlayers();
-    void StartRequest(std::uint64_t steamId);
-    bool HasPendingRequest(std::uint64_t steamId) const;
-    void HandleHttpResult(PendingRequest& request, HTTPRequestCompleted_t* result, bool failed);
-    CEntityInstance* FindController(int slot) const;
-    void ApplyCoin(PlayerState& player);
-    void ClearCoin(PlayerState& player);
-    std::uint32_t* GetRanks(CEntityInstance* controller) const;
-    void MarkInventoryChanged(CEntityInstance* controller) const;
-    bool IsFresh(const CacheEntry& entry, std::uint64_t now) const;
-
-    std::array<PlayerState, 64> players_{};
-    std::unordered_map<std::uint64_t, CacheEntry> cache_;
-    std::list<PendingRequest> requests_;
-    CSteamGameServerAPIContext steamContext_;
-    ISteamHTTP* http_ = nullptr;
-    std::string pluginDirectory_;
-    std::string cachePath_;
-    std::string apiKey_;
-    std::chrono::seconds refreshInterval_{3600};
-    int requestTimeoutSeconds_ = 10;
-    int maxConcurrentRequests_ = 4;
-    std::ptrdiff_t entitySystemOffset_ = 0;
-    std::ptrdiff_t inventoryServicesOffset_ = 0;
-    std::ptrdiff_t ranksOffset_ = 0;
-    bool cacheDirty_ = false;
-    Clock::time_point nextTick_{};
-    Clock::time_point nextSave_{};
+	KHook::Virtual<IServerGameDLL, void, bool, bool, bool> game_frame_;
+	IServerGameDLL *server_ = nullptr;
+	std::string directory_;
+	faceit::Config config_;
+	faceit::Cache cache_;
+	bool cache_dirty_ = false;
+	std::unordered_map<std::uint64_t, Clock::time_point> retry_at_;
+	std::list<Request> requests_;
+	std::array<Player, 64> players_ {};
+	Clock::time_point next_tick_ {};
+	Clock::time_point next_save_ {};
+	bool key_warning_shown_ = false;
 };
-
-extern FaceitLevels g_FaceitLevels;
 
 PLUGIN_GLOBALVARS();
