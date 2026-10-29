@@ -18,6 +18,7 @@ A Metamod:Source plugin for Counter-Strike 2 that shows every player's FACEIT le
 - Metamod:Source 2.0.0 build 1469 or newer
 - A FACEIT Data API key (server-side) from [developers.faceit.com](https://developers.faceit.com/)
 - The FACEIT level images on the clients: Workshop item [3777518340](https://steamcommunity.com/sharedfiles/filedetails/?id=3777518340) through MultiAddonManager. The levels use the icons of these map tokens: Boyard (1), Blagai (2), Black Gold (3), Biome (4), Bazaar (5), Basalt (6), Backalley (7), Apollo (8), Anubis (9), Ali (10).
+  Do not load another addon that replaces these map token icons (for example a different FACEIT level pack): the scoreboard then shows its images, and the levels look wrong.
 
 ## Installation
 
