@@ -56,7 +56,7 @@ Levels are cached in `addons/faceit_levels/cache.tsv`. The file can be deleted a
 Dependencies are pinned in `build-dependencies.json` (Metamod:Source, s2sdk, hl2sdk-manifests, AMBuild) and fetched by the build scripts.
 
 - Windows (Visual Studio 2022 C++ build tools, Python 3): `.\scripts\build-windows.ps1`
-- Linux (Docker; builds in Valve's SteamRT3 "sniper" SDK image): `.\scripts\build-steamrt3.ps1`, or `scripts/build-linux.sh` on a Linux machine with gcc, git and Python 3
+- Linux (WSL 2 with the cs2-build distro; builds in Valve's SteamRT3 "sniper" SDK): `.\scripts\build-steamrt3.ps1`, or `scripts/build-linux.sh` on a Linux machine with gcc, git and Python 3
 
 The release files are staged in `dist/`. Tests for the config, reply and cache parsing:
 
