@@ -53,6 +53,10 @@ plugin.sources += [
   os.path.join(root, 'src', 'plugin.cpp'),
   os.path.join(root, 'src', 'game.cpp'),
   os.path.join(root, 'src', 'faceit.cpp'),
+  # entitysystem.cpp in s2sdk 58bebeb calls into KeyValues3 and CEntityKeyValues; without these two the Windows link
+  # fails and the Linux .so carries undefined symbols.
+  os.path.join(sdk['path'], 'tier0_perproject', 'keyvalues3.cpp'),
+  os.path.join(sdk['path'], 'entity2', 'entitykeyvalues.cpp'),
   # GameEntitySystem() and CEntitySystem::GetEntityIdentity (used by GetPlayerController).
   os.path.join(sdk['path'], 'entity2', 'entitysystem.cpp'),
   os.path.join(sdk['path'], 'entity2', 'entityidentity.cpp'),
