@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.1
+
+- Built against Metamod:Source 2.0.0 build 1490 and the current s2sdk. It still loads on Metamod 2.0.0 build 1469 and newer; build 1490 or newer is recommended, because it fixes Metamod's own plugin-unload bugs.
+- Nothing changes in game.
+
 ## 2.0.0
 
 - Rewritten from scratch.
