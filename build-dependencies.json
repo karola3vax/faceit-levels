@@ -15,7 +15,8 @@
   "s2sdk": {
     "url": "https://github.com/alliedmodders/s2sdk.git",
     "commit": "58bebeb6e4aa342159638a88f6e4c05bd493e246",
-    "note": "The cs2 branch of s2sdk (2026-11-13), with the CS2 2000943 net-message layout."
+    "note": "The cs2 branch of s2sdk (2026-11-13), with the CS2 2000943 net-message layout. The patch adds the CSource2Server virtual CS2 2000950 inserted at slot 14 (GameFrame 19 -> 20); upstream has no fix yet.",
+    "patches": ["patches/s2sdk-2000950-isource2server.patch"]
   },
   "steamrt3_image": "registry.gitlab.steamos.cloud/steamrt/sniper/sdk@sha256:2969e5a47146a6494c01d953cd818b1d62712f42f9e54c4809d7a3aa8dc276ce",
   "steamrt3_build_id": "3.0.20260608.242788"

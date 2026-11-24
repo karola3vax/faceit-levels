@@ -1,0 +1,14 @@
+diff --git a/public/engine2/isource2server.h b/public/engine2/isource2server.h
+index ed2a6b581d97eda4c356fd629f979816e0ac1a92..dc6ce8b6d9fc3bfa7818e8615576367362c1d391 100644
+--- a/public/engine2/isource2server.h
++++ b/public/engine2/isource2server.h
+@@ -141,6 +141,9 @@ public:
+ 	// Let the game .dll allocate it's own network/shared string tables
+ 	virtual void			GameCreateNetworkStringTables( void ) = 0;
+ 
++	// CS2 2000950: new slot 14 (server.dll 0xdcf9b0, libserver.so 0x197e5b0), tail call to slot 1 of a global; name unknown
++	virtual void			unk_001() = 0;
++
+ 	virtual void			WriteSignonMessages( const bf_write &buf ) = 0;
+ 
+ 	virtual void			PreWorldUpdate( bool simulating ) = 0;

@@ -17,12 +17,22 @@ def git(target: Path, *args: str) -> str:
     check=True, capture_output=True, text=True).stdout.strip()
 
 
-def checkout(name: str, spec: dict[str, str]) -> Path:
+def apply(target: Path, patch: Path, *args: str) -> subprocess.CompletedProcess[str]:
+  return subprocess.run(["git", "-c", f"safe.directory={target}", "-C", str(target), "apply", *args, str(patch)],
+    capture_output=True, text=True)
+
+
+def checkout(name: str, spec: dict) -> Path:
   target = DEPENDENCIES / name
+  patches = [ROOT / patch for patch in spec.get("patches", [])]
   if not (target / ".git").is_dir():
     target.mkdir(parents=True, exist_ok=True)
     git(target, "init", "-q")
     git(target, "remote", "add", "origin", spec["url"])
+  # Undo this repo's own patches from an earlier run, so the pinned commit is checked out clean.
+  for patch in reversed(patches):
+    if apply(target, patch, "--reverse", "--check").returncode == 0:
+      apply(target, patch, "--reverse")
   if git(target, "status", "--porcelain"):
     raise RuntimeError(f"{name} has local changes; refusing to replace them")
   if subprocess.run(["git", "-c", f"safe.directory={target}", "-C", str(target), "rev-parse", "-q", "--verify",
@@ -31,6 +41,10 @@ def checkout(name: str, spec: dict[str, str]) -> Path:
   git(target, "checkout", "-q", "--detach", spec["commit"])
   if git(target, "rev-parse", "HEAD") != spec["commit"]:
     raise RuntimeError(f"{name} did not resolve to {spec['commit']}")
+  for patch in patches:
+    result = apply(target, patch)
+    if result.returncode != 0:
+      raise RuntimeError(f"{patch.name} does not apply to {name} {spec['commit']}:\n{result.stderr}")
   return target
 
 
